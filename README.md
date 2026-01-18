@@ -46,7 +46,7 @@ The solution simulates a production-grade observability use case by integrating 
 - `cribl/traffic_pipeline.json` – Cribl pipeline for parsing and enrichment
 - `data/city_traffic_sample.json` – Sample traffic data (offline testing)
 - `dashboard/city_traffic_classic_dashboard.xml` – Classic Splunk dashboard XML
-
+- `pdf/` – Exported dashboard for offline viewing
 ---
 
 ## Notes

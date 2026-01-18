@@ -1,0 +1,118 @@
+{
+  "name": "traffic_pipeline",
+  "description": "Pipeline to fetch TomTom traffic data, normalize it, and forward to Splunk",
+  "version": "1.0.0",
+  "enabled": true,
+  "type": "pipeline",
+  "stages": [
+    {
+      "type": "http",
+      "name": "TomTom Traffic API Fetch",
+      "config": {
+        "url": "https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json",
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "queryParams": {
+          "key": "<YOUR_TOMTOM_API_KEY>",
+          "unit": "KMPH",
+          "boundingBox": "12.9716,77.5946,12.2958,76.6394"
+        },
+        "polling": {
+          "enabled": true,
+          "interval": 60
+        }
+      }
+    },
+    {
+      "type": "parse",
+      "name": "JSON Parse",
+      "config": {
+        "type": "json",
+        "field": "message",
+        "target": "traffic"
+      }
+    },
+    {
+      "type": "eval",
+      "name": "Normalize Traffic Fields",
+      "config": {
+        "rules": [
+          {
+            "type": "eval",
+            "target": "traffic.normalized_speed",
+            "expression": "if(isNull(traffic.currentSpeed), 0, traffic.currentSpeed)"
+          },
+          {
+            "type": "eval",
+            "target": "traffic.normalized_freeFlowSpeed",
+            "expression": "if(isNull(traffic.freeFlowSpeed), 0, traffic.freeFlowSpeed)"
+          },
+          {
+            "type": "eval",
+            "target": "traffic.congestion_percent",
+            "expression": "if(traffic.normalized_freeFlowSpeed == 0, 0, round((1 - (traffic.normalized_speed / traffic.normalized_freeFlowSpeed)) * 100, 2))"
+          },
+          {
+            "type": "eval",
+            "target": "traffic.is_congested",
+            "expression": "if(traffic.congestion_percent >= 40, true, false)"
+          },
+          {
+            "type": "eval",
+            "target": "traffic.event_time",
+            "expression": "now()"
+          }
+        ]
+      }
+    },
+    {
+      "type": "geo",
+      "name": "Geo Enrichment",
+      "config": {
+        "sourceField": "traffic.coordinates.coordinate",
+        "targetField": "traffic.geo",
+        "type": "polyline"
+      }
+    },
+    {
+      "type": "rename",
+      "name": "Rename Fields",
+      "config": {
+        "fields": {
+          "traffic.currentSpeed": "current_speed",
+          "traffic.freeFlowSpeed": "free_flow_speed",
+          "traffic.currentTravelTime": "current_travel_time",
+          "traffic.freeFlowTravelTime": "free_flow_travel_time",
+          "traffic.confidence": "confidence",
+          "traffic.roadClosure": "road_closure",
+          "traffic.congestion_percent": "congestion_percent",
+          "traffic.is_congested": "is_congested",
+          "traffic.event_time": "event_time",
+          "traffic.geo": "geo_polyline"
+        }
+      }
+    },
+    {
+      "type": "sourcetype",
+      "name": "Set Sourcetype",
+      "config": {
+        "sourcetype": "tomtom:traffic",
+        "source": "tomtom_traffic_api",
+        "host": "tomtom_api"
+      }
+    },
+    {
+      "type": "splunk",
+      "name": "Send to Splunk",
+      "config": {
+        "destination": "splunk",
+        "index": "traffic",
+        "token": "<YOUR_SPLUNK_HEC_TOKEN>",
+        "url": "https://<YOUR_SPLUNK_HEC_ENDPOINT>:8088/services/collector",
+        "batchSize": 1
+      }
+    }
+  ]
+}

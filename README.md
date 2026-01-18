@@ -36,10 +36,10 @@ The solution simulates a production-grade observability use case by integrating 
 ---
 ## Screenshots
 ![Overview](dashboard/screenshots/overview.png)
-![Congestion Level](dashboard/screenshots/Congestion Level Distribution.png)
-![Impact By Location](dashboard/dashboard_screenshots/skill_set.png)
-![Travel Time BY SLA Breach](dashboard/dashboard_screenshots/KPI.png)
-![Average Delay](dashboard/dashboard_screenshots/coverage.png)
+![Congestion Level](dashboard/screenshots/congestion_level.png)
+![Impact By Location](dashboard/screenshots/impact.png)
+![Travel Time BY SLA Breach](dashboard/screenshots/sla_breach.png)
+![Average Delay](dashboard/screenshots/average_delay.png)
 
 ## Files Included
 - `scripts/tomtom_traffic_fetcher.py` – Python script to fetch live traffic data

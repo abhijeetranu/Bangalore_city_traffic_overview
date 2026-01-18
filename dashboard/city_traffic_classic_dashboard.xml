@@ -1,0 +1,172 @@
+<dashboard version="1.1" theme="dark">
+  <label>Bangalore City Traffic Command Center</label>
+  <row>
+    <panel>
+      <title>Live Traffic Congestion Heatmap</title>
+      <map>
+        <search>
+          <query>index="blr_traffic" sourcetype="_json" source="traffic_blr_updated.json" 
+| eval congestion_index = round((1 - currentSpeed/freeFlowSpeed) * 100, 2) 
+| eval delay_min = round((currentTravelTime - freeFlowTravelTime) / 60, 2) 
+| eval congestion_level = case(
+    congestion_index &gt;= 60, "Severe",
+    congestion_index &gt;= 40, "High",
+    congestion_index &gt;= 20, "Moderate",
+    true(), "Free Flow"
+    ) 
+| stats avg(congestion_index) as congestion by latitude longitude</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="mapping.map.center">(12.9716,77.5946)</option>
+        <option name="mapping.map.zoom">11</option>
+        <option name="mapping.tileLayer.maxZoom">19</option>
+        <option name="mapping.tileLayer.url">http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png</option>
+        <option name="mapping.type">marker</option>
+      </map>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Top Congested Corridors</title>
+      <table>
+        <search>
+          <query>index="blr_traffic" sourcetype="_json" source="traffic_blr_updated.json" 
+| eval congestion_index = round((1 - currentSpeed/freeFlowSpeed) * 100, 2) 
+| eval delay_min = round((currentTravelTime - freeFlowTravelTime) / 60, 2) 
+| eval congestion_level = case(
+    congestion_index &gt;= 60, "Severe",
+    congestion_index &gt;= 40, "High",
+    congestion_index &gt;= 20, "Moderate",
+    true(), "Free Flow"
+    ) 
+| stats avg(congestion_index) as avg_congestion by corridor 
+| sort - avg_congestion 
+| head 10 | eval avg_congestion1= round(avg_congestion,2) | table corridor avg_congestion1 
+| rename corridor as "Location", avg_congestion1 as "Average Congestion"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Traffic Speed Trend</title>
+      <chart>
+        <search>
+          <query>index="blr_traffic" sourcetype="_json" source="traffic_blr_updated.json" 
+| eval congestion_index = round((1 - currentSpeed/freeFlowSpeed) * 100, 2) 
+| eval delay_min = round((currentTravelTime - freeFlowTravelTime) / 60, 2) 
+| eval congestion_level = case(
+    congestion_index &gt;= 60, "Severe",
+    congestion_index &gt;= 40, "High",
+    congestion_index &gt;= 20, "Moderate",
+    true(), "Free Flow"
+    ) 
+| timechart span=5m avg(currentSpeed) as "Avg Speed (km/h)"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Incident Impact by Location</title>
+      <chart>
+        <search>
+          <query>index="blr_traffic" sourcetype="_json" source="traffic_blr_updated.json" 
+| eval congestion_index = round((1 - currentSpeed/freeFlowSpeed) * 100, 2) 
+| eval delay_min = round((currentTravelTime - freeFlowTravelTime) / 60, 2) 
+| eval congestion_level = case(
+    congestion_index &gt;= 60, "Severe",
+    congestion_index &gt;= 40, "High",
+    congestion_index &gt;= 20, "Moderate",
+    true(), "Free Flow"
+    ) 
+| stats count by corridor incident</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Travel Time SLA Breaches</title>
+      <chart>
+        <search>
+          <query>index="blr_traffic" sourcetype="_json" source="traffic_blr_updated.json" 
+| eval congestion_index = round((1 - currentSpeed/freeFlowSpeed) * 100, 2) 
+| eval delay_min = round((currentTravelTime - freeFlowTravelTime) / 60, 2) 
+| eval congestion_level = case(
+    congestion_index &gt;= 60, "Severe",
+    congestion_index &gt;= 40, "High",
+    congestion_index &gt;= 20, "Moderate",
+    true(), "Free Flow"
+    ) 
+| where currentTravelTime &gt; freeFlowTravelTime * 1.3 
+| stats count as breaches by road_name</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Congestion Level Distribution</title>
+      <chart>
+        <search>
+          <query>index="blr_traffic" sourcetype="_json" source="traffic_blr_updated.json" 
+| eval congestion_index = round((1 - currentSpeed/freeFlowSpeed) * 100, 2) 
+| eval delay_min = round((currentTravelTime - freeFlowTravelTime) / 60, 2) 
+| eval congestion_level = case(
+    congestion_index &gt;= 60, "Severe",
+    congestion_index &gt;= 40, "High",
+    congestion_index &gt;= 20, "Moderate",
+    true(), "Free Flow"
+    ) 
+| stats count by congestion_level</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Average Delay (Minutes)</title>
+      <single>
+        <search>
+          <query>index="blr_traffic" sourcetype="_json" source="traffic_blr_updated.json" 
+| eval congestion_index = round((1 - currentSpeed/freeFlowSpeed) * 100, 2) 
+| eval delay_min = round((currentTravelTime - freeFlowTravelTime) / 60, 2) 
+| eval congestion_level = case(
+    congestion_index &gt;= 60, "Severe",
+    congestion_index &gt;= 40, "High",
+    congestion_index &gt;= 20, "Moderate",
+    true(), "Free Flow"
+    ) 
+| stats avg(delay_min) as avg_delay</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="height">235</option>
+        <option name="rangeColors">["0x53a051","0xf8be34","0xdc4e41"]</option>
+        <option name="rangeValues">[10,20]</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+  </row>
+</dashboard>
